@@ -38,6 +38,7 @@ void mul_of_langs_on_stack(vector<vector<vector<int>>> &dp) {
     for (int i = 0; i <= k; i++)
         for (int j = 0; j <= k; j++) {
             c[i][0] = min(c[i][0], a[i][0] + b[j][0]);
+            c[j][0] = min(c[j][0], a[i][0] + b[j][0]);
             c[min(i + j, k)][0] = min(c[min(i + j, k)][0], a[i][1] + b[j][2]);
             for (int t = 0; t < 3; t++) {
                 c[i][2] = min(c[i][2], a[i][2] + b[j][t]);
@@ -71,14 +72,9 @@ void klini_lang(vector<vector<vector<int>>> &dp) {
     for (int i = 0; i < k; i++)
         sum_of_langs_on_stack(dp);
 }
-//acb..bab.c. ∗ .ab.ba. + . + ∗a. b 3
-void solve() {
-    string s;
-    char x;
-    int k;
+
+void solve(string s, char x, int k) {
     vector<vector<vector<int>>> dp;
-    cin >> s >> x >> k;
-//    cout << s << ' ' << x << ' ' << k;
     for (int i = 0; i < s.size(); i++) {
         char c = s[i];
         if (c >= 'a' && c <= 'c') {
@@ -99,8 +95,13 @@ void solve() {
 
 int main() {
     int t = 1;
-    for (int i = 0; i < t; i++)
-        solve();
+    for (int i = 0; i < t; i++) {
+        string s;
+        char x;
+        int k;
+        cin >> s >> x >> k;
+        solve(s, x, k);
+    }
     return 0;
 }
 // baac...caaab....+ a 4                 ans = INF
