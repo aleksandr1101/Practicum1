@@ -10,69 +10,94 @@ using std::string;
 using std::vector;
 using std::min;
 
-vector<vector<int>> add_char_to_stack(char c, char x, int k) {
-    vector<vector<int>> a = vector<vector<int>> (k + 1, vector<int> (3, INF));
+struct i_count_of_x_status {
+    int x_containing = 0;
+    int x_ending = 0;
+    int x_begining = 0;
+};
+
+using lang_status = vector<i_count_of_x_status>;
+using stack_of_langs = vector<lang_status>;
+
+lang_status add_char_to_stack(char c, char x, int k) {
+    lang_status new_lang = vector<i_count_of_x_status>(k + 1, {INF, INF, INF});
     int t = (c == x);
-    a[0][0] = a[0][1] = a[0][2] = 1;
-    a[t][0] = a[t][1] = a[t][2] = 1;
-    return a;
+    new_lang[0] = {1, 1, 1};
+    new_lang[t] = {1, 1, 1};
+    return new_lang;
 }
 
-vector<vector<int>> get_neutral(int k) {
-    vector<vector<int>> a = vector<vector<int>> (k + 1, vector<int> (3, INF));
-    a[0][0] = a[0][1] = a[0][2] = 0;
-    return a;
+lang_status get_neutral(int k) {
+    lang_status e = vector<i_count_of_x_status>(k + 1, {INF, INF, INF});
+    e[0] = {0, 0, 0};
+    return e;
 }
 
-void sum_of_langs_on_stack(vector<vector<vector<int>>> &dp) {
-    vector<vector<int>> a = dp.back();
+void sum_of_langs_on_stack(stack_of_langs &dp) {
+    lang_status first_lang = dp.back();
     dp.pop_back();
-    vector<vector<int>> b = dp.back();
+    lang_status second_lang = dp.back();
     dp.pop_back();
-    for (int i = 0; i < a.size(); i++)
-        for (int j = 0; j < 3; j++)
-            a[i][j] = min(a[i][j], b[i][j]);
-    dp.push_back(a);
+    for (int i = 0; i < first_lang.size(); i++)
+        first_lang[i] = {min(first_lang[i].x_containing, second_lang[i].x_containing),
+                         min(first_lang[i].x_ending, second_lang[i].x_ending),
+                         min(first_lang[i].x_begining, second_lang[i].x_begining)};
+    dp.push_back(first_lang);
 }
 
-void mul_of_langs_on_stack(vector<vector<vector<int>>> &dp) {
-    vector<vector<int>> b = dp.back();
+void mul_of_langs_on_stack(stack_of_langs &dp) {
+    lang_status first_lang = dp.back();
     dp.pop_back();
-    vector<vector<int>> a = dp.back();
+    lang_status second_lang = dp.back();
     dp.pop_back();
-    int k = a.size() - 1;
-    vector<vector<int>> c = vector<vector<int>> (k + 1, vector<int> (3, INF));
+    int k = first_lang.size() - 1;
+    lang_status new_lang = vector<i_count_of_x_status>(k + 1, {INF, INF, INF});
     for (int i = 0; i <= k; i++)
         for (int j = 0; j <= k; j++) {
-            c[i][0] = min(c[i][0], a[i][0] + b[j][0]);
-            c[j][0] = min(c[j][0], a[i][0] + b[j][0]);
-            c[min(i + j, k)][0] = min(c[min(i + j, k)][0], a[i][1] + b[j][2]);
-            for (int t = 0; t < 3; t++) {
-                c[i][2] = min(c[i][2], a[i][2] + b[j][t]);
-                c[j][1] = min(c[j][1], a[i][t] + b[j][1]);
-            }
-            if (a[i][0] == i)
-                c[min(i + j, k)][2] = min(c[min(i + j, k)][2], a[i][0] + b[j][2]);
-            if (b[j][0] == j)
-                c[min(i + j, k)][1] = min(c[min(i + j, k)][2], a[i][1] + b[j][0]);
+            // containing i or j number of x, not counting one of langs
+            new_lang[i].x_containing = min(new_lang[i].x_containing,
+                                           first_lang[i].x_containing + second_lang[j].x_containing);
+            new_lang[j].x_containing = min(new_lang[j].x_containing,
+                                           first_lang[i].x_containing + second_lang[j].x_containing);
+            // containing i + j number of x, cluing suffix and prefix
+            new_lang[min(i + j, k)].x_containing = min(new_lang[min(i + j, k)].x_containing,
+                                                       first_lang[i].x_ending + second_lang[j].x_begining);
+            // prefix and suffix of x, not counting one of langs
+            new_lang[i].x_begining = min(new_lang[i].x_begining,
+                                         first_lang[i].x_begining +
+                                         min({second_lang[j].x_containing, second_lang[j].x_ending,
+                                              second_lang[j].x_begining}));
+            new_lang[j].x_begining = min(new_lang[j].x_ending,
+                                         second_lang[j].x_ending +
+                                         min({first_lang[i].x_containing, first_lang[i].x_ending,
+                                              first_lang[i].x_begining}));
+            // prefix of x if the first word consists of only x
+            if (first_lang[i].x_containing == i)
+                new_lang[min(i + j, k)].x_begining = min(new_lang[min(i + j, k)].x_begining,
+                                                         first_lang[i].x_containing + second_lang[j].x_ending);
+            // suffix of x if the first word consists of only x
+            if (second_lang[j].x_containing == j)
+                new_lang[min(i + j, k)].x_ending = min(new_lang[min(i + j, k)].x_ending,
+                                                       first_lang[i].x_ending + second_lang[j].x_containing);
         }
     for (int i = k - 1; i >= 0; i--) {
-        c[i][0] = min(c[i + 1][0], c[i][0]);
-        c[i][1] = min(c[i + 1][1], c[i][1]);
-        c[i][2] = min(c[i + 1][2], c[i][2]);
+        new_lang[i] = {min(new_lang[i].x_containing, new_lang[i + 1].x_containing),
+                       min(new_lang[i].x_ending, new_lang[i + 1].x_ending),
+                       min(new_lang[i].x_begining, new_lang[i + 1].x_begining)};
+
     }
-    dp.push_back(c);
+    dp.push_back(new_lang);
 }
 
-void klini_lang(vector<vector<vector<int>>> &dp) {
-    vector<vector<int>> a = dp.back();
+void klini_lang(stack_of_langs &dp) {
+    lang_status kliniing_lang = dp.back();
     dp.pop_back();
-    int k = a.size() - 1;
-    vector<vector<int>> e = get_neutral(k);
+    int k = kliniing_lang.size() - 1;
+    lang_status e = get_neutral(k);
     dp.push_back(e);
     for (int i = 1; i <= k; i++) {
         for (int j = 0; j < i; j++)
-            dp.push_back(a);
+            dp.push_back(kliniing_lang);
         for (int j = 0; j < i - 1; j++)
             mul_of_langs_on_stack(dp);
     }
@@ -81,7 +106,8 @@ void klini_lang(vector<vector<vector<int>>> &dp) {
 }
 
 int solve(string s, char x, int k) {
-    vector<vector<vector<int>>> dp;
+    stack_of_langs dp;
+    //vector<vector<vector<int>>> dp;
     for (int i = 0; i < s.size(); i++) {
         char c = s[i];
         if (c >= 'a' && c <= 'c') {
@@ -94,5 +120,5 @@ int solve(string s, char x, int k) {
             mul_of_langs_on_stack(dp);
         }
     }
-    return dp[0][k][0];
+    return dp[0][k].x_containing;
 }
