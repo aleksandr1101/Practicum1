@@ -107,7 +107,6 @@ void klini_lang(stack_of_langs &dp) {
 
 int solve(string s, char x, int k) {
     stack_of_langs dp;
-    //vector<vector<vector<int>>> dp;
     for (int i = 0; i < s.size(); i++) {
         char c = s[i];
         if (c >= 'a' && c <= 'c') {
